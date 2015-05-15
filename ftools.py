@@ -1,7 +1,43 @@
 # -*- coding: utf-8 -*-
 
 import os
-from os import makedirs as create_directory
+import glob
+from collections import OrderedDict
+
+# Wrapper
+from os.path import exists, dirname
+from os import makedirs as mkdir
+
+
+def file_list(file_pattern):
+    """List of sorted filenames in path, based on pattern.
+
+    """
+    files = glob.glob(file_pattern)
+    return sorted(files)
+
+
+def file_tuple(file_pattern, index=0, split='_'):
+    """Create ordered dictonary from filenames in based on pattern.
+
+    """
+
+    files = list()
+
+    for filename in file_list(file_pattern):
+        basename = filename.split('/')[-1]
+        key = basename.split(split)[index]
+        files.append((key, filename))
+
+    return files
+
+
+def file_dict(file_pattern, index=0, split='_'):
+    return dict(file_tuple(file_pattern, index, split))
+
+
+def file_odict(file_pattern, index=0, split='_'):
+    return OrderedDict(file_tuple(file_pattern, index, split))
 
 
 def read_file(filename, strip=True):
@@ -18,20 +54,20 @@ def read_file(filename, strip=True):
     return file_str
 
 
-def create_file(filename, override=False):
+def mkfile(filename, override=False):
     """Create all directories and open new file.
 
     """
 
     # Create directory if it does not exit
-    directory = os.path.dirname(filename)
+    directory = dirname(filename)
     if directory:
-        if not os.path.exists(directory):
-            create_directory(directory)
+        if not exists(directory):
+            mkdir(directory)
 
     #  Check for existing file if overide is False
     if not override:
-        if os.path.exists(filename):
+        if exists(filename):
             raise OSError('file exists.')
 
     # Return file object
