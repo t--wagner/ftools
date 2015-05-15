@@ -4,7 +4,7 @@ import os
 import glob
 from collections import OrderedDict
 
-# Wrapper
+# Wrappers
 from os.path import exists, dirname
 from os import makedirs as mkdir
 
@@ -26,7 +26,8 @@ def file_tuple(file_pattern, index=0, split='_'):
 
     for filename in file_list(file_pattern):
         basename = filename.split('/')[-1]
-        key = basename.split(split)[index]
+        keys = basename.split(split)[index]
+        key= split.join(keys)
         files.append((key, filename))
 
     return files
