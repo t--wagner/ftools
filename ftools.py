@@ -3,60 +3,52 @@
 import os
 import glob
 from collections import OrderedDict
+import operator
 
 # Wrappers
-from os.path import exists, dirname
+from os.path import exists, dirname, basename
 from os import makedirs as mkdir
 
 
-def file_list(file_pattern):
+def file_list(file_pattern, *sorted_args, **sorted_kwargs):
     """List of sorted filenames in path, based on pattern.
 
     """
     files = glob.glob(file_pattern)
-    return sorted(files)
+    return sorted(files, *sorted_args, **sorted_kwargs)
 
 
-def file_tuple(file_pattern, index=0, split='_'):
+def file_tuple(filenames, index=0, split='_'):
     """Create ordered dictonary from filenames in based on pattern.
 
     """
 
     files = list()
 
-    for filename in file_list(file_pattern):
-        basename = filename.split('/')[-1]
-        keys = basename.split(split)[index]
-        key= split.join(keys)
+    if isinstance(index, (slice, int)):
+        ig = operator.itemgetter(index)
+    else:
+        ig = operator.itemgetter(*index)
+
+    for filename in filenames:
+        basename_str = basename(filename)
+        keys = ig(basename_str.split(split))
+        key = split.join(keys)
         files.append((key, filename))
 
     return files
 
 
-def file_dict(file_pattern, index=0, split='_'):
-    return dict(file_tuple(file_pattern, index, split))
+def file_dict(filenames, index=0, split='_'):
+    return dict(file_tuple(filenames, index, split))
 
 
-def file_odict(file_pattern, index=0, split='_'):
-    return OrderedDict(file_tuple(file_pattern, index, split))
-
-
-def read_file(filename, strip=True):
-    """Read file into string.
-
-    """
-
-    with open(filename, 'r') as fobj:
-        file_str = fobj.read()
-
-    if strip:
-        file_str = file_str.strip()
-
-    return file_str
+def file_odict(filenames, index=0, split='_'):
+    return OrderedDict(file_tuple(filenames, index, split))
 
 
 def mkfile(filename, override=False):
-    """Create all directories and open new file.
+    """Create directories and open file if not existing or override is True.
 
     """
 
@@ -75,17 +67,7 @@ def mkfile(filename, override=False):
     return open(filename, 'w')
 
 
-def cut_filetype(filename):
-    """Split type extension from filename.
-
-    Extension is everything from the last dot to the end, ignoring leading
-    dots.
-    """
-
-    return os.path.splitext(filename)[0]
-
-
-def get_filetype(filename):
+def filetype(filename):
     """Get type extension from filename.
 
     Extension is everything from the last dot to the end, ignoring leading
@@ -94,6 +76,15 @@ def get_filetype(filename):
 
     return os.path.splitext(filename)[1]
 
+
+def split(filename, filetype=False):
+    dirname, basename = os.path.split(filename)
+
+    if filetype:
+        basename, filetype = os.path.splitext(basename)
+        return dirname, basename, filetype
+    else:
+        return dirname, basename
 
 def index_str(positions, index):
     """Return an index string with a number of positions.
@@ -205,3 +196,17 @@ class BasenameIndexer(IndexerBase):
 
         # Return filename
         return filename
+
+
+def read_file(filename, strip=True):
+    """Read file into string.
+
+    """
+
+    with open(filename, 'r') as fobj:
+        file_str = fobj.read()
+
+    if strip:
+        file_str = file_str.strip()
+
+    return file_str
