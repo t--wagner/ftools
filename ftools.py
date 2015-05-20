@@ -123,7 +123,6 @@ def pload(file):
 
     return obj
 
-
 def read(filename, nr=None, strip=True):
     """Read file into string.
 
@@ -145,3 +144,58 @@ def read(filename, nr=None, strip=True):
         file_str = file_str.strip()
 
     return file_str
+
+
+class iopen(object):
+
+    def __init__(self, container, method=None, *open_args, **open_kwargs):
+
+        # Handle dictonaries
+        if isinstance(container, (OrderedDict, dict)):
+            self._files = container.__class__()
+            for key, filename in container.items():
+                self._files[key] = open(filename, *open_args, **open_kwargs)
+        else:
+            # Handle tuple types ((key0, filename0), (key1, filename1), ...)
+            try:
+                self._files = ((key, open(filename, *open_args, **open_kwargs)) \
+                               for key, filename in container)
+                self._files = container.__class__(self._files)
+            # Handle everything else
+            except (ValueError, TypeError):
+                self._files = (open(filename, *open_args, **open_kwargs) \
+                               for filename in container)
+                self._files = container.__class__(self._files)
+
+    def __getitem__(self, key):
+        return self._files[key]
+
+    def __getattr__(self, attr):
+        return getattr(self._files, attr)
+
+    def __dir__(self):
+        return dir(self._files)
+
+    def __repr__(self):
+        return repr(self._files)
+
+    def __str__(self):
+        return str(self._files)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
+
+    def close(self):
+        if isinstance(self._files, (OrderedDict, dict)):
+            for fobj in self._files.values():
+                fobj.close()
+        else:
+            try:
+                for key, fobj in self._files:
+                    fobj.close()
+            except (ValueError, AttributeError):
+                for fobj in self._files:
+                    fobj.close()
