@@ -21,29 +21,36 @@ def extension(filename):
     Extension is everything from the last dot to the end, ignoring leading
     dots. Extension may be empty.
     """
-
+    filename = os.path.normpath(filename)
     return os.path.splitext(filename)[1]
 
 
-def split(filename, extension=False):
-    dirname, basename = os.path.split(filename)
+def split(filename, directories=False, extension=False):
+    filename = os.path.normpath(filename)
+    splitted = os.path.split(filename)
 
     if extension:
-        basename, filetype = os.path.splitext(basename)
-        return dirname, basename, filetype
-    else:
-        return dirname, basename
+        basename, filetype = os.path.splitext(splitted[-1])
+        splitted = [splitted[0], basename, filetype]
+
+    if directories:
+        dirs = list(splitted[0].split(os.path.sep))
+        dirs.extend(splitted[1:])
+        splitted = dirs
+
+    return list(splitted)
 
 
-def index(filename, digits=3, start=0, stop=None, inc=1, seperator='_'):
+def index(filename, digits=3, start=0, stop=None, step=1, position=-1, seperator='_'):
     value = start
-    dirname, basename = split(filename)
+    splitted = split(filename, directories=True)
+    indexed_splitted = splitted[:]
 
     while ((stop is None) or (value < stop)):
-        indexed_basename = '{0:0{1}d}{2}{3}'.format(value, digits, seperator, basename)
-        indexed_filename = '{}/{}'.format(dirname, indexed_basename)
+        indexed_splitted[position] = '{0:0{1}d}{2}{3}'.format(value, digits, seperator, splitted[position])
+        indexed_filename = '/'.join(indexed_splitted)
         yield indexed_filename
-        value += inc
+        value += step
 
 
 def mkfile(filename, override=False):
