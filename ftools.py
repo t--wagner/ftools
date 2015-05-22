@@ -11,11 +11,33 @@ except:
    import pickle
 
 # Wrappers
-from os.path import exists, dirname, basename
 from os import makedirs as mkdir
+from os.path import exists as fexists
+from os.path import dirname as fdirname
+from os.path import basename as fbasename
 
 
-def extension(filename):
+def mkfile(filename, override=False):
+    """Create directories and open file if not existing or override is True.
+
+    """
+
+    # Create directory if it does not exit
+    directory = fdirname(filename)
+    if directory:
+        if not fexists(directory):
+            mkdir(directory)
+
+    #  Check for existing file if overide is False
+    if not override:
+        if fexists(filename):
+            raise OSError('file exists.')
+
+    # Return file object
+    return open(filename, 'w')
+
+
+def fextension(filename):
     """Get extension from filename.
 
     Extension is everything from the last dot to the end, ignoring leading
@@ -25,7 +47,7 @@ def extension(filename):
     return os.path.splitext(filename)[1]
 
 
-def split(filename, directories=False, extension=False):
+def fsplit(filename, directories=False, extension=False):
     filename = os.path.normpath(filename)
     splitted = os.path.split(filename)
 
@@ -41,9 +63,9 @@ def split(filename, directories=False, extension=False):
     return list(splitted)
 
 
-def index(filename, digits=3, start=0, stop=None, step=1, position=-1, seperator='_'):
+def findex(filename, digits=3, start=0, stop=None, step=1, position=-1, seperator='_'):
     value = start
-    splitted = split(filename, directories=True)
+    splitted = fsplit(filename, directories=True)
     indexed_splitted = splitted[:]
 
     while ((stop is None) or (value < stop)):
@@ -51,26 +73,6 @@ def index(filename, digits=3, start=0, stop=None, step=1, position=-1, seperator
         indexed_filename = '/'.join(indexed_splitted)
         yield indexed_filename
         value += step
-
-
-def mkfile(filename, override=False):
-    """Create directories and open file if not existing or override is True.
-
-    """
-
-    # Create directory if it does not exit
-    directory = dirname(filename)
-    if directory:
-        if not exists(directory):
-            mkdir(directory)
-
-    #  Check for existing file if overide is False
-    if not override:
-        if exists(filename):
-            raise OSError('file exists.')
-
-    # Return file object
-    return open(filename, 'w')
 
 
 def flist(file_pattern, *sorted_args, **sorted_kwargs):
@@ -94,7 +96,7 @@ def ftuple(filenames, index=0, split='_'):
         ig = operator.itemgetter(*index)
 
     for filename in filenames:
-        basename_str = basename(filename)
+        basename_str = fbasename(filename)
         keys = ig(basename_str.split(split))
         if isinstance(keys, str):
             key = keys
@@ -113,24 +115,7 @@ def fodict(filenames, index=0, split='_'):
     return OrderedDict(ftuple(filenames, index, split))
 
 
-def pdump(obj, file, override=False, protocol=0):
-    if isinstance(file, str):
-        with mkfile(file, override) as fobj:
-            pickle.dump(obj, fobj, protocol)
-    else:
-        pickle.dump(obj, file, protocol)
-
-
-def pload(file):
-    if isinstance(file, str):
-        with open(file) as fobj:
-            obj = pickle.load(fobj)
-    else:
-        obj = pickle.load(file)
-
-    return obj
-
-def read(filename, nr=None, strip=True):
+def fread(filename, nr=None, strip=True):
     """Read file into string.
 
     """
@@ -153,9 +138,9 @@ def read(filename, nr=None, strip=True):
     return file_str
 
 
-class iopen(object):
+class fopen(object):
 
-    def __init__(self, container, method=None, *open_args, **open_kwargs):
+    def __init__(self, container, *open_args, **open_kwargs):
 
         # Handle dictonaries
         if isinstance(container, (OrderedDict, dict)):
@@ -206,3 +191,20 @@ class iopen(object):
             except (ValueError, AttributeError):
                 for fobj in self._files:
                     fobj.close()
+
+def pload(file):
+    if isinstance(file, str):
+        with open(file) as fobj:
+            obj = pickle.load(fobj)
+    else:
+        obj = pickle.load(file)
+
+    return obj
+
+
+def pdump(obj, file, override=False, protocol=0):
+    if isinstance(file, str):
+        with mkfile(file, override) as fobj:
+            pickle.dump(obj, fobj, protocol)
+    else:
+        pickle.dump(obj, file, protocol)
