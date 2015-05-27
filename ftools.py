@@ -4,11 +4,8 @@ import os
 import glob
 from collections import OrderedDict
 import operator
-
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import textwrap
+import pickle
 
 # Wrappers
 from os import makedirs as mkdir
@@ -17,7 +14,7 @@ from os.path import dirname as fdirname
 from os.path import basename as fbasename
 
 
-def mkfile(filename, override=False):
+def mkfile(filename, override=False, append=False):
     """Create directories and open file if not existing or override is True.
 
     """
@@ -33,8 +30,13 @@ def mkfile(filename, override=False):
         if fexists(filename):
             raise OSError('file exists.')
 
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+
     # Return file object
-    return open(filename, 'w')
+    return open(filename, mode)
 
 
 def fextension(filename):
@@ -123,7 +125,7 @@ def fread(filename, nr=None, strip=True):
     with open(filename) as fobj:
         if nr:
             lines = []
-            for x in xrange(nr):
+            for x in range(nr):
                 try:
                     lines.append(next(fobj))
                 except StopIteration:
@@ -138,6 +140,15 @@ def fread(filename, nr=None, strip=True):
     return file_str
 
 
+def fwrite(filename, string, override=False, append=False, trim=True):
+
+    if trim:
+        string = textwrap.dedent(string).strip()
+
+    with mkfile(filename, override) as fobj:
+        fobj.write(string)
+
+
 class fopen(object):
 
     def __init__(self, container, *open_args, **open_kwargs):
@@ -145,17 +156,17 @@ class fopen(object):
         # Handle dictonaries
         if isinstance(container, (OrderedDict, dict)):
             self._files = container.__class__()
-            for key, filename in container.items():
+            for key, filename in list(container.items()):
                 self._files[key] = open(filename, *open_args, **open_kwargs)
         else:
             # Handle tuple types ((key0, filename0), (key1, filename1), ...)
             try:
-                self._files = ((key, open(filename, *open_args, **open_kwargs)) \
+                self._files = ((key, open(filename, *open_args, **open_kwargs))
                                for key, filename in container)
                 self._files = container.__class__(self._files)
             # Handle everything else
             except (ValueError, TypeError):
-                self._files = (open(filename, *open_args, **open_kwargs) \
+                self._files = (open(filename, *open_args, **open_kwargs)
                                for filename in container)
                 self._files = container.__class__(self._files)
 
@@ -182,7 +193,7 @@ class fopen(object):
 
     def close(self):
         if isinstance(self._files, (OrderedDict, dict)):
-            for fobj in self._files.values():
+            for fobj in list(self._files.values()):
                 fobj.close()
         else:
             try:
@@ -191,6 +202,7 @@ class fopen(object):
             except (ValueError, AttributeError):
                 for fobj in self._files:
                     fobj.close()
+
 
 def pload(file):
     if isinstance(file, str):
