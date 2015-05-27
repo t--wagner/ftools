@@ -70,7 +70,7 @@ def findex(filename, digits=3, start=0, stop=None, step=1, position=-1, seperato
     splitted = fsplit(filename, directories=True)
     indexed_splitted = splitted[:]
 
-    while ((stop is None) or (value < stop)):
+    while (stop is None) or (value < stop):
         indexed_splitted[position] = '{0:0{1}d}{2}{3}'.format(value, digits, seperator, splitted[position])
         indexed_filename = '/'.join(indexed_splitted)
         yield indexed_filename
@@ -140,7 +140,7 @@ def fread(filename, nr=None, strip=True):
     return file_str
 
 
-def fwrite(filename, string, override=False, append=False, trim=True):
+def fwrite(filename, string, override=False, trim=True):
 
     if trim:
         string = textwrap.dedent(string).strip()
