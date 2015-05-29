@@ -4,11 +4,7 @@ import os
 import glob
 from collections import OrderedDict
 import operator
-
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import pickle
 
 # Wrappers
 from os import makedirs as mkdir
@@ -17,7 +13,7 @@ from os.path import dirname as fdirname
 from os.path import basename as fbasename
 
 
-def mkfile(filename, override=False):
+def mkfile(filename, override=False, mode='w'):
     """Create directories and open file if not existing or override is True.
 
     """
@@ -34,7 +30,7 @@ def mkfile(filename, override=False):
             raise OSError('file exists.')
 
     # Return file object
-    return open(filename, 'w')
+    return open(filename, mode)
 
 
 def fextension(filename):
@@ -192,9 +188,10 @@ class fopen(object):
                 for fobj in self._files:
                     fobj.close()
 
+
 def pload(file):
     if isinstance(file, str):
-        with open(file) as fobj:
+        with open(file, mode='rb') as fobj:
             obj = pickle.load(fobj)
     else:
         obj = pickle.load(file)
@@ -204,7 +201,7 @@ def pload(file):
 
 def pdump(obj, file, override=False, protocol=0):
     if isinstance(file, str):
-        with mkfile(file, override) as fobj:
+        with mkfile(file, override, mode='wb') as fobj:
             pickle.dump(obj, fobj, protocol)
     else:
         pickle.dump(obj, file, protocol)
